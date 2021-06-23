@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31112.23
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sort_PUVS", "Sort_PUVS\Sort_PUVS.csproj", "{EA1C3FBD-9C04-4D50-A84E-511858D5C8EB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EA1C3FBD-9C04-4D50-A84E-511858D5C8EB}.Debug|x86.ActiveCfg = Debug|x86
+		{EA1C3FBD-9C04-4D50-A84E-511858D5C8EB}.Debug|x86.Build.0 = Debug|x86
+		{EA1C3FBD-9C04-4D50-A84E-511858D5C8EB}.Release|x86.ActiveCfg = Release|x86
+		{EA1C3FBD-9C04-4D50-A84E-511858D5C8EB}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {716A3CC4-50E5-489E-8649-AA68A7B067CC}
+	EndGlobalSection
+EndGlobal
