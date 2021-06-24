@@ -65,6 +65,7 @@ namespace Sort_PUVS
             this.radButton1.Size = new System.Drawing.Size(180, 41);
             this.radButton1.TabIndex = 1;
             this.radButton1.Text = "Загрузить";
+            this.radButton1.Click += new System.EventHandler(this.radButton1_Click);
             // 
             // radButton2
             // 
