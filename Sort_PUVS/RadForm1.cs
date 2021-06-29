@@ -13,292 +13,156 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Data.OleDb;
+using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Spreadsheet;
+using OfficeOpenXml;
 
 namespace Sort_PUVS
 {
     public partial class RadForm1 : Telerik.WinControls.UI.RadForm
     {
-        CancellationTokenSource cts; // Источник токена отмены
-        DataSet ds = new DataSet();
-        ExcelFile excel = new ExcelFile();
-
-        string XlFile = null;
-        string XlFile1 = null;
-
-        public RadForm1()
-        {
-            InitializeComponent();
-          
-        }
-
-
-        private async void startButton_Click(object sender, EventArgs e)
-        {
-            cts = new CancellationTokenSource();
-            startButton.Enabled = false;
-            cancelButton.Enabled = true;
-            progressBar1.Value1 = 0;
-            var progress = new Progress<int>(ProgressHandler);
-            try
-            {
-                await WorkAsync(cts.Token, progress);
-            }
-            catch (OperationCanceledException ex)
-            {
-                MessageBox.Show("Операция прервана.", "Внимание.", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-            startButton.Enabled = true;
-            cancelButton.Enabled = false;
-        }
-
-        private void ProgressHandler(int number)
-        {
-            progressBar1.Value1 = number;
-        }
-
-        void texty(int i)
-        {
-            radRichTextEditor1.Text = "загружено " + i + " процентов";
-        }
-        private async Task WorkAsync(CancellationToken token, IProgress<int> progress)
-        {
-            for (int i = 1; i <= 100; i++)
-            {
-                token.ThrowIfCancellationRequested();
-                await Task.Delay(100);
-                progress?.Report(i);
-            }
-        }
-
-        private void cancelButton_Click(object sender, EventArgs e)
-        {
-            cts?.Cancel();
-        }
-
-        public void radButton2_Click(object sender, EventArgs e)
-        {
-           
-            OpenFileDialog fbd = new OpenFileDialog();
-           // FolderBrowserDialog fbd = new FolderBrowserDialog();
-            if (fbd.ShowDialog() == DialogResult.OK)
-            {
-                radRichTextEditor1.Text = fbd.FileName; 
-                excel.ExcelFilePath = fbd.FileName;
-                excel.OpenExcel();
-                excel.GetTableDataFromXl(fbd.FileName);
-                excel.CloseExcel();
-                excel.UniqueEx();
-                int length = excel.dt.Rows.Count;
-                int length1 = excel.dt_copy.Rows.Count;
-                radRichTextEditor1.Text = Convert.ToString(length);
-                radRichTextEditor1.Text = Convert.ToString(length1);
-                excel.FindEx();
-              //  excel.CloseExcel();
-            }
-        }
-
-        private void radButton1_Click(object sender, EventArgs e)
-        {
-           
-        }
-    }
-    public class ExcelFile
-    {
+        private BackgroundWorker bw = new BackgroundWorker();
+        int cou = 0;
         public DataTable dt = new DataTable();
         public DataTable dt_copy = new DataTable();
-
+        public DataTable finddata = new DataTable();
 
         Excel.Application myExcelApplication;
         Excel.Workbook myExcelWorkbook;
         Excel.Worksheet myExcelWorkSheet;
 
-        public string ExcelFilePath { get; set; } = string.Empty;
+        public RadForm1()
+        {
+            InitializeComponent();
+            bw.WorkerReportsProgress = true;
+            bw.WorkerSupportsCancellation = true;
+            bw.DoWork += new DoWorkEventHandler(bw_DoWork);
+            bw.ProgressChanged += new ProgressChangedEventHandler(bw_ProgressChanged);
+            bw.RunWorkerCompleted += new RunWorkerCompletedEventHandler(bw_RunWorkerCompleted);
 
-        public int Rownumber { get; set; } = 1;
+        }
+
+        public string ExcelFilePath { get; set; } = string.Empty;
 
         public void UniqueEx()
         {
-            dt_copy = dt.Copy();
-            string colname = dt_copy.Columns[0].ColumnName;
-            dt_copy = dt_copy.DefaultView.ToTable(true, dt_copy.Columns[0].ColumnName); //distinct values from column 0
+            try
+            {
+                dt_copy = dt.Copy();
+                dt_copy = dt_copy.DefaultView.ToTable(true, dt_copy.Columns[0].ColumnName); //distinct values from column 0
+            }
+            catch (Exception)
+            {
+                MessageBox.Show("Не удалось выделить уникальные значения");
+                throw;
+            }
+
         }
 
-        public void FindEx()
+        public void FindEx(DataTable data, int y)
         {
-            DataTable finddata = new DataTable();
-            finddata = dt.Clone();
-            
-            for (int y = 0; y < dt_copy.Rows.Count; y++)
+            try
             {
                 finddata.Clear();
                 for (int i = 0; i < dt.Rows.Count; i++)
                 {
-                    // progressBar1.Value = progressBar1.Maximum - 1;
-
                     if (Convert.ToString(dt.Rows[i][0]) == Convert.ToString(dt_copy.Rows[y][0])) // откуда - куда
-                    { //MessageBox.Show("Found");
+                    {
                         finddata.ImportRow(dt.Rows[i]);
-                       // excelFile.AddDataToExcel("есть", 8, y + 3); //куда пишем
+                        dt.Rows.RemoveAt(i); //гениально!!!!
+                        i--;
                     }
-                    //label15.Text = Convert.ToString(i);
+                   
                 }
-                ExportToExcel(finddata, @"C:\"+ Convert.ToString(dt_copy.Rows[y][0]) + " .xls");             
-                // CreateEx(finddata, Convert.ToString(dt_copy.Rows[y][0]));
-                //   label14.Text = Convert.ToString(y);
-
+                cou += finddata.Rows.Count;
+                ExportToExcel(finddata, Convert.ToString(dt_copy.Rows[y][0]));   
             }
-           // excelFile.CloseExcel();
-            MessageBox.Show("Found");
-            finddata.Dispose();
-            
+            catch (Exception)
+            {
+                MessageBox.Show("Не удалось записать файлы");
+              //  throw;
+            }
         }
 
-        public void CreateEx(DataTable data, string reg)
+        public void ExportToExcel(DataTable tbl, string excelFilePath)
         {
-            //string dataInd = DateTime.Now.ToString("dd.MM.yyyy HH mm ss");//дата время запуска программы
-            string pathExe = Application.StartupPath.ToString() + "\\";//путь к файлу exe
-            string nameFolder = "";
-            string sni = string.Empty;
-            //System.Text.StringBuilder sni = new System.Text.StringBuilder();
+            ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
 
-            Excel.Application excel;
-            Excel.Workbook wbInputExcel, wbResultExcel;//книги Excel
-            Excel.Worksheet wshInputExcel, wshResultExcel;//листы Excel
-            //создаем папку в которой будем сохранять все промежуточные файлы и результат
-            nameFolder = "Выгрузка_" + reg + "\\";
-
-            if (Directory.Exists(pathExe + nameFolder))
+            FileInfo fi1 = new FileInfo(@"C:\SPU\"+ excelFilePath + ".xls");
+            using (ExcelPackage pck = new ExcelPackage())
             {
-            }
-            else
-            {
-                DirectoryInfo di = Directory.CreateDirectory(pathExe + nameFolder);
-            }
-            excel = new Excel.Application();
-
-            //создание сводного файла Excel, в который будут объединяться все файлы
-            wbResultExcel = excel.Workbooks.Add(System.Reflection.Missing.Value);
-            wshResultExcel = wbResultExcel.Sheets[1];
-            wbResultExcel.Worksheets.Add(data);
-           // excel.Worksheets.Add(data, "1");
-            wshResultExcel.Name = "Лист1";
-            string nameFile = reg + " .xlsx";
-            wbResultExcel.SaveAs(pathExe + nameFolder + nameFile);
-
-            excel.DisplayAlerts = false;
-            
-        }
-
-        public void ExportToExcel(DataTable tbl, string excelFilePath = null)
-        {
-            try
-            {
-                if (tbl == null || tbl.Columns.Count == 0)
-                    throw new Exception("ExportToExcel: Null or empty input table!\n");
-
-                // load excel, and create a new workbook
-                var excelApp = new Excel.Application();
-                excelApp.Workbooks.Add();
-
-                // single worksheet
-                Excel._Worksheet workSheet = excelApp.ActiveSheet;
-
-                // column headings
-                for (var i = 0; i < tbl.Columns.Count; i++)
-                {
-                    workSheet.Cells[1, i + 1] = tbl.Columns[i].ColumnName;
-                }
-
-                // rows
-                for (var i = 0; i < tbl.Rows.Count; i++)
-                {
-                    // to do: format datetime values before printing
-                    for (var j = 0; j < tbl.Columns.Count; j++)
-                    {
-                        workSheet.Cells[i + 2, j + 1] = tbl.Rows[i][j];
-                    }
-                }
-
-                // check file path
-                if (!string.IsNullOrEmpty(excelFilePath))
-                {
-                    try
-                    {
-                        workSheet.SaveAs(excelFilePath);
-                        excelApp.Quit();
-                        MessageBox.Show("Excel file saved!");
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new Exception("ExportToExcel: Excel file could not be saved! Check filepath.\n"
-                                            + ex.Message);
-                    }
-                }
-                else
-                { // no file path is given
-                    excelApp.Visible = true;
-                }
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("ExportToExcel: \n" + ex.Message);
+                ExcelWorksheet ws = pck.Workbook.Worksheets.Add("SPU");
+               
+                ws.Cells["A1"].LoadFromDataTable(tbl, true);
+                
+                pck.SaveAs(fi1);
+                GC.Collect();
+                ws.Dispose();
+                pck.Dispose();   
             }
         }
 
         public void OpenExcel()
         {
-            myExcelApplication = null;
-
-            myExcelApplication = new Excel.Application
+            try
             {
-                DisplayAlerts = false // turn off alerts
-            }; // create Excell App
+                myExcelApplication = null;
 
+                myExcelApplication = new Excel.Application
+                {
+                    DisplayAlerts = false // turn off alerts
+                }; // create Excell App
 
-            myExcelWorkbook = myExcelApplication.Workbooks._Open(ExcelFilePath, System.Reflection.Missing.Value,
-               System.Reflection.Missing.Value, System.Reflection.Missing.Value, System.Reflection.Missing.Value,
-               System.Reflection.Missing.Value, System.Reflection.Missing.Value, System.Reflection.Missing.Value,
-               System.Reflection.Missing.Value, System.Reflection.Missing.Value, System.Reflection.Missing.Value,
-               System.Reflection.Missing.Value, System.Reflection.Missing.Value); // open the existing excel file
+                myExcelWorkbook = myExcelApplication.Workbooks._Open(ExcelFilePath, System.Reflection.Missing.Value,
+                   System.Reflection.Missing.Value, System.Reflection.Missing.Value, System.Reflection.Missing.Value,
+                   System.Reflection.Missing.Value, System.Reflection.Missing.Value, System.Reflection.Missing.Value,
+                   System.Reflection.Missing.Value, System.Reflection.Missing.Value, System.Reflection.Missing.Value,
+                   System.Reflection.Missing.Value, System.Reflection.Missing.Value); // open the existing excel file
 
-            int numberOfWorkbooks = myExcelApplication.Workbooks.Count; // get number of workbooks (optional)
+                int numberOfWorkbooks = myExcelApplication.Workbooks.Count; // get number of workbooks (optional)
 
-            myExcelWorkSheet = (Excel.Worksheet)myExcelWorkbook.Worksheets[1]; // define in which worksheet, do you want to add data
-            myExcelWorkSheet.Name = "Лист 1"; // define a name for the worksheet (optinal)
+                myExcelWorkSheet = (Excel.Worksheet)myExcelWorkbook.Worksheets[1]; // define in which worksheet, do you want to add data
+                myExcelWorkSheet.Name = "Лист 1"; // define a name for the worksheet (optinal)
 
-            int numberOfSheets = myExcelWorkbook.Worksheets.Count; // get number of worksheets (optional)
-
-            MessageBox.Show("Success");
+                int numberOfSheets = myExcelWorkbook.Worksheets.Count; // get number of worksheets (optional)
+ 
+            }
+            catch (Exception)
+            {
+                MessageBox.Show("Не удалось открыть файл. Проверьте, возможно он уже открыт или поврежден");
+                //throw;
+            }
+            
         }
 
-        public void AddDataToExcel(string index, int stolb, int row)
-        {
-            myExcelWorkSheet.Cells[row, stolb] = index;
-        }
-
-        public void CloseExcel()
+        public void CloseExcel() //Остаются открытыми файлы после работы
         {
             try
             {
-                myExcelWorkbook.SaveAs(ExcelFilePath, System.Reflection.Missing.Value, System.Reflection.Missing.Value, System.Reflection.Missing.Value,
+                try
+                {
+                    myExcelWorkbook.SaveAs(ExcelFilePath, System.Reflection.Missing.Value, System.Reflection.Missing.Value, System.Reflection.Missing.Value,
                                                System.Reflection.Missing.Value, System.Reflection.Missing.Value, Excel.XlSaveAsAccessMode.xlNoChange,
                                                System.Reflection.Missing.Value, System.Reflection.Missing.Value, System.Reflection.Missing.Value,
                                                System.Reflection.Missing.Value, System.Reflection.Missing.Value); // Save data in excel
 
 
-                myExcelWorkbook.Close(true, ExcelFilePath, System.Reflection.Missing.Value); // close the worksheet
+                    myExcelWorkbook.Close(true, ExcelFilePath, System.Reflection.Missing.Value); // close the worksheet
+                }
+                catch (Exception)
+                {
+                    MessageBox.Show("Не удалось файл.");
+                    //throw;
+                }
+                
             }
             finally
             {
-                //  if (myExcelApplication != null)
-                // {
-
                 myExcelApplication.Quit(); // close the excel application
                 GC.Collect();
                 System.Runtime.InteropServices.Marshal.ReleaseComObject(myExcelWorkSheet);
                 System.Runtime.InteropServices.Marshal.ReleaseComObject(myExcelWorkbook);
                 System.Runtime.InteropServices.Marshal.ReleaseComObject(myExcelApplication);
-                // }
             }
 
         }
@@ -338,53 +202,115 @@ namespace Sort_PUVS
                
             }
             catch (Exception ex)
-            { MessageBox.Show(Convert.ToString(ex)); }
+            { 
+                MessageBox.Show("Не удалось прочесть файл\n" + ex); 
+            }
 
             return dt;
         }
 
-        private void LoadData()
+        public void radButton2_Click(object sender, EventArgs e)
         {
-            ExcelFile excelFile = new ExcelFile();
-            try
+
+            OpenFileDialog fbd = new OpenFileDialog();
+            if (fbd.ShowDialog() == DialogResult.OK)
             {
-                //string XlFile1 = null;
-                //string XlFile = null;
-                DataTable dtInd = GetTableDataFromXl(ExcelFilePath); // Converting Excel Data into DataTable 
+                radRichTextEditor1.Text = fbd.FileName;
+                ExcelFilePath = fbd.FileName;
+                radRichTextEditor1.Text += "Выбран файл: " + fbd.FileName + "\n";
 
-                DataTable dtPens = GetTableDataFromXl(ExcelFilePath);
-               // excelFile.ExcelFilePath = XlFile1;
-                excelFile.OpenExcel();
-                MessageBox.Show("1");
+                OpenExcel();
+                radRichTextEditor1.Text += "Файл успешно открыт\n";
+                GetTableDataFromXl(fbd.FileName);
+                cou = dt.Rows.Count;
+                radRichTextEditor1.Text += "Обнаружено " + dt.Rows.Count + " записей в файле" + "\n";
+                CloseExcel();
+                UniqueEx();
+                radRichTextEditor1.Text += "Обнаружено " + dt_copy.Rows.Count + " записей страхователей в файле" + "\n";
+            }
+        }
 
-                // progressBar1.Maximum = dtPens.Rows.Count * dtInd.Rows.Count;
+        private void radButton1_Click(object sender, EventArgs e)
+        {
+            cou = 0;
+            finddata = dt.Clone();
+            for (int y = 0; y < dt_copy.Rows.Count; y++)
+            {
+                FindEx(finddata, y);
+                int percentage = (y + 1) * 100 / dt_copy.Rows.Count;
+            }
+            finddata.Dispose();
+           
+        }
 
+        private void radButton3_Click(object sender, EventArgs e)
+        {
 
-                for (int y = 0; y < dtPens.Rows.Count; y++)
+        }
+
+        private void radButton5_Click(object sender, EventArgs e)
+        {
+            if (bw.IsBusy != true)
+            {
+                bw.RunWorkerAsync();
+            }
+        }
+
+        private void radButton6_Click(object sender, EventArgs e)
+        {
+            if (bw.WorkerSupportsCancellation == true)
+            {
+                bw.CancelAsync();
+            }
+        }
+
+        private void bw_DoWork(object sender, DoWorkEventArgs e)
+        {
+            BackgroundWorker worker = sender as BackgroundWorker;
+
+            cou = 0;
+            finddata = dt.Clone();
+            for (int y = 0; y < dt_copy.Rows.Count; y++)
+            {
+                if ((worker.CancellationPending == true))
                 {
-                    for (int i = 0; i < dtInd.Rows.Count; i++)
-                    {
-                        // progressBar1.Value = progressBar1.Maximum - 1;
-
-                        if (Convert.ToString(dtInd.Rows[i][1]) == Convert.ToString(dtPens.Rows[y][6])) // откуда - куда
-                        { //MessageBox.Show("Found");
-                            excelFile.AddDataToExcel("есть", 8, y + 3); //куда пишем
-                        }
-                        //label15.Text = Convert.ToString(i);
-                    }
-                    //   label14.Text = Convert.ToString(y);
-
+                    e.Cancel = true;
+                    break;
                 }
-                excelFile.CloseExcel();
-                MessageBox.Show("Found");
+                else
+                {
+                    int percentage = (y + 1) * 100 / dt_copy.Rows.Count;
+                    FindEx(finddata, y);
+                    worker.ReportProgress(percentage);
+                }
             }
-            //(dtPens.Rows[6] in dtInd.Rows[1])
 
-
-            catch (Exception ex)
+            finddata.Dispose();
+        }
+        private void bw_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            if ((e.Cancelled == true))
             {
-                MessageBox.Show(Convert.ToString(ex));
+                progressBar1.Text = "Отменено!";
             }
+
+            else if (!(e.Error == null))
+            {
+                progressBar1.Text = ("Ошибка: " + e.Error.Message);
+            }
+
+            else
+            {
+                progressBar1.Text = "Выполнено!";
+            }
+
+            radRichTextEditor1.Text += "Обработано " + cou + " записей страхователей в файле" + "\n";
+            radRichTextEditor1.Text += "Создано " + dt_copy.Rows.Count + " каталогов" + "\n";
+        }
+        private void bw_ProgressChanged(object sender, ProgressChangedEventArgs e)
+        {
+            progressBar1.Value1 = e.ProgressPercentage;
+            progressBar1.Text = (e.ProgressPercentage.ToString() + "%");
         }
     }
 }
