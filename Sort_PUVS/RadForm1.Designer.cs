@@ -38,7 +38,7 @@ namespace Sort_PUVS
             this.radButton6 = new Telerik.WinControls.UI.RadButton();
             this.radRichTextEditor1 = new Telerik.WinControls.UI.RadTextBoxControl();
             this.fluentTheme1 = new Telerik.WinControls.Themes.FluentTheme();
-            this.radButton1 = new Telerik.WinControls.UI.RadButton();
+            this.radButton3 = new Telerik.WinControls.UI.RadButton();
             this.telerikMetroBlueTheme1 = new Telerik.WinControls.Themes.TelerikMetroBlueTheme();
             ((System.ComponentModel.ISupportInitialize)(this.radButton2)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.radButton4)).BeginInit();
@@ -46,7 +46,7 @@ namespace Sort_PUVS
             ((System.ComponentModel.ISupportInitialize)(this.radButton5)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.radButton6)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.radRichTextEditor1)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.radButton1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.radButton3)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this)).BeginInit();
             this.SuspendLayout();
             // 
@@ -112,14 +112,15 @@ namespace Sort_PUVS
             this.radRichTextEditor1.TabIndex = 13;
             this.radRichTextEditor1.ThemeName = "Fluent";
             // 
-            // radButton1
+            // radButton3
             // 
-            this.radButton1.Location = new System.Drawing.Point(13, 308);
-            this.radButton1.Name = "radButton1";
-            this.radButton1.Size = new System.Drawing.Size(180, 41);
-            this.radButton1.TabIndex = 14;
-            this.radButton1.Text = "Посмотреть лог-файл";
-            this.radButton1.ThemeName = "Fluent";
+            this.radButton3.Location = new System.Drawing.Point(13, 308);
+            this.radButton3.Name = "radButton3";
+            this.radButton3.Size = new System.Drawing.Size(180, 41);
+            this.radButton3.TabIndex = 14;
+            this.radButton3.Text = "Посмотреть лог-файл";
+            this.radButton3.ThemeName = "Fluent";
+            this.radButton3.Click += new System.EventHandler(this.radButton3_Click);
             // 
             // RadForm1
             // 
@@ -127,7 +128,7 @@ namespace Sort_PUVS
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(679, 422);
             this.ControlBox = false;
-            this.Controls.Add(this.radButton1);
+            this.Controls.Add(this.radButton3);
             this.Controls.Add(this.radRichTextEditor1);
             this.Controls.Add(this.radButton6);
             this.Controls.Add(this.radButton5);
@@ -152,7 +153,7 @@ namespace Sort_PUVS
             ((System.ComponentModel.ISupportInitialize)(this.radButton5)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.radButton6)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.radRichTextEditor1)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.radButton1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.radButton3)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this)).EndInit();
             this.ResumeLayout(false);
 
@@ -168,7 +169,7 @@ namespace Sort_PUVS
         private Telerik.WinControls.UI.RadButton radButton6;
         private Telerik.WinControls.UI.RadTextBoxControl radRichTextEditor1;
         private Telerik.WinControls.Themes.FluentTheme fluentTheme1;
-        private Telerik.WinControls.UI.RadButton radButton1;
+        private Telerik.WinControls.UI.RadButton radButton3;
         private Telerik.WinControls.Themes.TelerikMetroBlueTheme telerikMetroBlueTheme1;
     }
 }

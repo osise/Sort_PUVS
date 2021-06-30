@@ -16,6 +16,7 @@ using System.Data.OleDb;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Spreadsheet;
 using OfficeOpenXml;
+using System.Diagnostics;
 
 namespace Sort_PUVS
 {
@@ -56,7 +57,7 @@ namespace Sort_PUVS
             catch (Exception ex)
             {
                 MessageBox.Show("Не удалось выделить уникальные значения");
-                sb.Append(DateTime.Now + ": Не удалось выделить уникальные значения\n" + ex);
+                sb.Append(DateTime.Now + ": Не удалось выделить уникальные значения\r\n" + ex);
                 
             }
 
@@ -84,7 +85,7 @@ namespace Sort_PUVS
             {
 
                 MessageBox.Show("Не удалось записать файлы");
-                sb.Append(DateTime.Now + ": Не удалось записать файлы\n" + ex);
+                sb.Append(DateTime.Now + ": Не удалось записать файлы\r\n" + ex);
             }
         }
 
@@ -106,22 +107,22 @@ namespace Sort_PUVS
 
         public void ExportToExcel(DataTable tbl, string excelFilePath)
         {
-            sb.Append("\n");
-            sb.Append(DateTime.Now + ": Обработка файла\n");
+            sb.Append("\r\n");
+            sb.Append(DateTime.Now + ": Обработка файла\r\n");
             if (excelFilePath.Length == 11)
             {
-                sb.Append(DateTime.Now + ": Преобразовываем номер\n");
+                sb.Append(DateTime.Now + ": Преобразовываем номер\r\n");
                 sb.Append(DateTime.Now + ": " + excelFilePath + " -> ");
                 excelFilePath = "0" + excelFilePath;
                 excelFilePath = InsertStrings(excelFilePath, "-", 2, 3);
-                sb.Append(excelFilePath + "\n");
+                sb.Append(excelFilePath + "\r\n");
             }
             else if (excelFilePath.Length == 12)
             {
-                sb.Append(DateTime.Now + ": Преобразовываем номер\n");
+                sb.Append(DateTime.Now + ": Преобразовываем номер\r\n");
                 sb.Append(DateTime.Now + ": " + excelFilePath + "-> ");
                 excelFilePath = InsertStrings(excelFilePath, "-", 2, 3);
-                sb.Append(excelFilePath + "\n");
+                sb.Append(excelFilePath + "\r\n");
             }
             else
             {
@@ -129,22 +130,22 @@ namespace Sort_PUVS
             }
             string nameFolder = "";
             ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
-            sb.Append(DateTime.Now + ": Создаем каталог " + excelFilePath + "\n");
+            sb.Append(DateTime.Now + ": Создаем каталог " + excelFilePath + "\r\n");
             nameFolder = @"C:\SPU\" + excelFilePath + "\\";
             cat ++;
 
 
             if (Directory.Exists(nameFolder))
             {
-                sb.Append(DateTime.Now + ": Каталог " + excelFilePath + " существует!\n");
+                sb.Append(DateTime.Now + ": Каталог " + excelFilePath + " существует!\r\n");
             }
             else
             {
                 DirectoryInfo di = Directory.CreateDirectory(nameFolder);
             }
             FileInfo fi1 = new FileInfo(nameFolder + excelFilePath + ".xlsx");
-            sb.Append(DateTime.Now + ": Создан файл в " + fi1 + "\n");
-            sb.Append(DateTime.Now + ": Скопировано строк :" + finddata.Rows.Count + "\n");
+            sb.Append(DateTime.Now + ": Создан файл в " + fi1 + "\r\n");
+            sb.Append(DateTime.Now + ": Скопировано строк :" + finddata.Rows.Count + "\r\n");
             
             using (ExcelPackage pck = new ExcelPackage())
             {
@@ -187,7 +188,7 @@ namespace Sort_PUVS
             catch (Exception ex)
             {
                 MessageBox.Show("Не удалось открыть файл. Проверьте, возможно он уже открыт или поврежден");
-                sb.Append(DateTime.Now + ": Не удалось открыть файл. Проверьте, возможно он уже открыт или поврежден\n" + ex);
+                sb.Append(DateTime.Now + ": Не удалось открыть файл. Проверьте, возможно он уже открыт или поврежден\r\n" + ex);
             }
 
         }
@@ -209,7 +210,7 @@ namespace Sort_PUVS
                 catch (Exception ex )
                 {
                     MessageBox.Show("Не удалось закрыть исходный файл.\n Проверьте, возможно он уже закрыт или поврежден");
-                    sb.Append(DateTime.Now + ": Не удалось закрыть исходный файл. Проверьте, возможно он уже открыт или поврежден\n" + ex);
+                    sb.Append(DateTime.Now + ": Не удалось закрыть исходный файл. Проверьте, возможно он уже открыт или поврежден\r\n" + ex);
                     //throw;
                 }
                 
@@ -262,7 +263,7 @@ namespace Sort_PUVS
             catch (Exception ex)
             { 
                 MessageBox.Show("Не удалось прочесть файл\n" + ex);
-                sb.Append(DateTime.Now + ": Не удалось прочесть файл\n Проверьте, возможно он уже открыт или поврежден\n" + ex);
+                sb.Append(DateTime.Now + ": Не удалось прочесть файл\r\n Проверьте, возможно он уже открыт или поврежден\r\n" + ex);
             }
 
             return dt;
@@ -270,9 +271,9 @@ namespace Sort_PUVS
        
         public void radButton2_Click(object sender, EventArgs e)
         {
-            sb.Append("\n");
-            sb.Append("\n");
-            sb.Append("------------------------ " + DateTime.Now + " ------------------------\n");
+            sb.Append("\r\n");
+            sb.Append("\r\n");
+            sb.Append("------------------------ " + DateTime.Now + " ------------------------\r\n");
             
             OpenFileDialog fbd = new OpenFileDialog();
             if (fbd.ShowDialog() == DialogResult.OK)
@@ -280,11 +281,11 @@ namespace Sort_PUVS
                 radRichTextEditor1.Text = fbd.FileName;
                 ExcelFilePath = fbd.FileName;
                 radRichTextEditor1.Text += "Выбран файл: " + fbd.FileName + "\n";
-                sb.Append(DateTime.Now + ": Выбран файл: " + fbd.FileName + "\n");
+                sb.Append(DateTime.Now + ": Выбран файл: " + fbd.FileName + "\r\n");
 
                 OpenExcel();
                 radRichTextEditor1.Text += "Файл успешно открыт\n";
-                sb.Append(DateTime.Now + ": Файл успешно открыт\n");
+                sb.Append(DateTime.Now + ": Файл успешно открыт\r\n");
                 radRichTextEditor1.Text += "Обработка файла, подождите...\n";
 
                 GetTableDataFromXl(fbd.FileName);
@@ -292,11 +293,11 @@ namespace Sort_PUVS
                 
                 CloseExcel();
                 radRichTextEditor1.Text += "Обнаружено записей в файле: " + dt.Rows.Count + "\n";
-                sb.Append(DateTime.Now + ": Обнаружено записей в файле: " + dt.Rows.Count + "\n");
+                sb.Append(DateTime.Now + ": Обнаружено записей в файле: " + dt.Rows.Count + "\r\n");
 
                 UniqueEx();
                 radRichTextEditor1.Text += "Обнаружено номеров страхователей в файле: " + dt_copy.Rows.Count + "\n";
-                sb.Append(DateTime.Now + ": Обнаружено номеров страхователей в файле: " + dt_copy.Rows.Count + "\n");
+                sb.Append(DateTime.Now + ": Обнаружено номеров страхователей в файле: " + dt_copy.Rows.Count + "\r\n");
                 radRichTextEditor1.Text += "Нажмите кнопку Начать\n";
 
             }
@@ -306,7 +307,7 @@ namespace Sort_PUVS
 
         private void radButton3_Click(object sender, EventArgs e)
         {
-
+            Process.Start("notepad.exe", @"C:\log.txt");
         }
 
         private void radButton5_Click(object sender, EventArgs e)
@@ -330,6 +331,7 @@ namespace Sort_PUVS
             BackgroundWorker worker = sender as BackgroundWorker;
 
             cou = 0;
+            cat = 0;
             finddata = dt.Clone();
             for (int y = 0; y < dt_copy.Rows.Count; y++)
             {
@@ -357,30 +359,30 @@ namespace Sort_PUVS
             {
                 progressBar1.Text = "Отменено!";
                 radRichTextEditor1.Text += "Отменено!\n";
-                sb.Append("\n");
-                sb.Append(DateTime.Now + ": Отменено!\n");
+                sb.Append("\r\n");
+                sb.Append(DateTime.Now + ": Отменено!\r\n");
             }
 
             else if (!(e.Error == null))
             {
                 progressBar1.Text = ("Ошибка: " + e.Error.Message);
                 radRichTextEditor1.Text += "Ошибка: " + e.Error.Message + "\n";
-                sb.Append("\n");
-                sb.Append(DateTime.Now + ": Ошибка: " + e.Error.Message + "\n");
+                sb.Append("\r\n");
+                sb.Append(DateTime.Now + ": Ошибка: " + e.Error.Message + "\r\n");
             }
 
             else
             {
                 progressBar1.Text = "Выполнено!";
                 radRichTextEditor1.Text += "Выполнено!\n";
-                sb.Append("\n");
-                sb.Append(DateTime.Now + ": Выполнено!\n");
+                sb.Append("\r\n");
+                sb.Append(DateTime.Now + ": Выполнено!\r\n");
             }
 
             radRichTextEditor1.Text += "Обработано записей страхователей в файле: " +cou + "\n";
-            sb.Append(DateTime.Now + ": Обработано записей страхователей в файле: " +cou + "\n");
+            sb.Append(DateTime.Now + ": Обработано записей страхователей в файле: " +cou + "\r\n");
             radRichTextEditor1.Text += "Создано каталогов :" + cat + "\n";
-            sb.Append(DateTime.Now + ": Создано каталогов :" + cat + "\n");
+            sb.Append(DateTime.Now + ": Создано каталогов :" + cat + "\r\n");
             File.AppendAllText(@"C:\log.txt", sb.ToString());
             sb.Clear();
         }
