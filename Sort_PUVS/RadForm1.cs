@@ -162,35 +162,39 @@ namespace Sort_PUVS
 
         public void OpenExcel()
         {
+           
             try
             {
-                myExcelApplication = null;
+                
+               
+                    myExcelApplication = null;
 
-                myExcelApplication = new Excel.Application
-                {
-                    DisplayAlerts = false // turn off alerts
-                }; // create Excell App
+                    myExcelApplication = new Excel.Application
+                    {
+                        DisplayAlerts = false // turn off alerts
+                    }; // create Excell App
 
-                myExcelWorkbook = myExcelApplication.Workbooks._Open(ExcelFilePath, System.Reflection.Missing.Value,
-                   System.Reflection.Missing.Value, System.Reflection.Missing.Value, System.Reflection.Missing.Value,
-                   System.Reflection.Missing.Value, System.Reflection.Missing.Value, System.Reflection.Missing.Value,
-                   System.Reflection.Missing.Value, System.Reflection.Missing.Value, System.Reflection.Missing.Value,
-                   System.Reflection.Missing.Value, System.Reflection.Missing.Value); // open the existing excel file
+                    myExcelWorkbook = myExcelApplication.Workbooks._Open(ExcelFilePath, System.Reflection.Missing.Value,
+                        System.Reflection.Missing.Value, System.Reflection.Missing.Value, System.Reflection.Missing.Value,
+                        System.Reflection.Missing.Value, System.Reflection.Missing.Value, System.Reflection.Missing.Value,
+                        System.Reflection.Missing.Value, System.Reflection.Missing.Value, System.Reflection.Missing.Value,
+                        System.Reflection.Missing.Value, System.Reflection.Missing.Value); // open the existing excel file
 
-                int numberOfWorkbooks = myExcelApplication.Workbooks.Count; // get number of workbooks (optional)
+                    int numberOfWorkbooks = myExcelApplication.Workbooks.Count; // get number of workbooks (optional)
 
-                myExcelWorkSheet = (Excel.Worksheet)myExcelWorkbook.Worksheets[1]; // define in which worksheet, do you want to add data
-                myExcelWorkSheet.Name = "Лист 1"; // define a name for the worksheet (optinal)
+                    myExcelWorkSheet = (Excel.Worksheet)myExcelWorkbook.Worksheets[1]; // define in which worksheet, do you want to add data
+                    myExcelWorkSheet.Name = "Лист 1"; // define a name for the worksheet (optinal)
 
-                int numberOfSheets = myExcelWorkbook.Worksheets.Count; // get number of worksheets (optional)
- 
+                    int numberOfSheets = myExcelWorkbook.Worksheets.Count; // get number of worksheets (optional)
+
+                  
             }
-            catch (Exception ex)
+           
+             catch (Exception ex)
             {
                 MessageBox.Show("Не удалось открыть файл. Проверьте, возможно он уже открыт или поврежден");
                 sb.Append(DateTime.Now + ": Не удалось открыть файл. Проверьте, возможно он уже открыт или поврежден\r\n" + ex);
             }
-
         }
 
         public void CloseExcel() //Остаются открытыми файлы после работы
@@ -278,27 +282,35 @@ namespace Sort_PUVS
             OpenFileDialog fbd = new OpenFileDialog();
             if (fbd.ShowDialog() == DialogResult.OK)
             {
-                radRichTextEditor1.Text = fbd.FileName;
                 ExcelFilePath = fbd.FileName;
                 radRichTextEditor1.Text += "Выбран файл: " + fbd.FileName + "\n";
                 sb.Append(DateTime.Now + ": Выбран файл: " + fbd.FileName + "\r\n");
+                string Ext1 = Path.GetExtension(ExcelFilePath);
+                if (Ext1 == ".xls" || Ext1 == ".xlsx")
+                {
+                    OpenExcel();
+                    radRichTextEditor1.Text += "Файл успешно открыт\n";
+                    sb.Append(DateTime.Now + ": Файл успешно открыт\r\n");
+                    radRichTextEditor1.Text += "Обработка файла, подождите...\n";
 
-                OpenExcel();
-                radRichTextEditor1.Text += "Файл успешно открыт\n";
-                sb.Append(DateTime.Now + ": Файл успешно открыт\r\n");
-                radRichTextEditor1.Text += "Обработка файла, подождите...\n";
+                    GetTableDataFromXl(fbd.FileName);
+                    cou = dt.Rows.Count;
 
-                GetTableDataFromXl(fbd.FileName);
-                cou = dt.Rows.Count;
-                
-                CloseExcel();
-                radRichTextEditor1.Text += "Обнаружено записей в файле: " + dt.Rows.Count + "\n";
-                sb.Append(DateTime.Now + ": Обнаружено записей в файле: " + dt.Rows.Count + "\r\n");
+                    CloseExcel();
+                    radRichTextEditor1.Text += "Обнаружено записей в файле: " + dt.Rows.Count + "\n";
+                    sb.Append(DateTime.Now + ": Обнаружено записей в файле: " + dt.Rows.Count + "\r\n");
 
-                UniqueEx();
-                radRichTextEditor1.Text += "Обнаружено номеров страхователей в файле: " + dt_copy.Rows.Count + "\n";
-                sb.Append(DateTime.Now + ": Обнаружено номеров страхователей в файле: " + dt_copy.Rows.Count + "\r\n");
-                radRichTextEditor1.Text += "Нажмите кнопку Начать\n";
+                    UniqueEx();
+                    radRichTextEditor1.Text += "Обнаружено номеров страхователей в файле: " + dt_copy.Rows.Count + "\n";
+                    sb.Append(DateTime.Now + ": Обнаружено номеров страхователей в файле: " + dt_copy.Rows.Count + "\r\n");
+                    radRichTextEditor1.Text += "Нажмите кнопку Начать\n";
+                }
+                else
+                {
+                    radRichTextEditor1.Text += "Не удалось открыть файл. Это не файл MS Excel!" + "\n";
+                    sb.Append(DateTime.Now + ": Не удалось открыть файл.Это не файл MS Excel!\r\n");
+                }
+               
 
             }
             File.AppendAllText(@"C:\log.txt", sb.ToString());

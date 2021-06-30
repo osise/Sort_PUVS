@@ -145,7 +145,7 @@ namespace Sort_PUVS
             // 
             // 
             this.RootElement.ApplyShapeToControl = true;
-            this.Text = "   Программа для формирования и сортировки файлов \"Сорт-ПУВС\"";
+            this.Text = "   Программа для формирования и сортировки файлов \"Сорт-ПУВС\" v1.0";
             this.ThemeName = "TelerikMetroBlue";
             ((System.ComponentModel.ISupportInitialize)(this.radButton2)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.radButton4)).EndInit();
