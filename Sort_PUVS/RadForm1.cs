@@ -84,14 +84,53 @@ namespace Sort_PUVS
             }
         }
 
+        public static string InsertStrings(string text, string insertString, params int[] rangeLengths)
+        {
+            var sb = new StringBuilder(text);
+            var indexes = new int[rangeLengths.Length];
+            for (int i = 0; i < indexes.Length; i++)
+                indexes[i] = rangeLengths[i] + indexes.ElementAtOrDefault(i - 1) + insertString.Length;
+
+            for (int i = 0; i < indexes.Length; i++)
+            {
+                if (indexes[i] < sb.Length)
+                    sb.Insert(indexes[i], insertString);
+            }
+
+            return sb.ToString();
+        }
+
         public void ExportToExcel(DataTable tbl, string excelFilePath)
         {
-            ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+            if (excelFilePath.Length == 11)
+            {
+                excelFilePath = "0" + excelFilePath;
+                excelFilePath = InsertStrings(excelFilePath, "-", 2, 3);
+            }
+            else if (excelFilePath.Length == 12)
+            {
+                excelFilePath = InsertStrings(excelFilePath, "-", 2, 3);
+            }
+            else
+            {
 
-            FileInfo fi1 = new FileInfo(@"C:\SPU\"+ excelFilePath + ".xls");
+            }
+            string nameFolder = "";
+            ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+            nameFolder = @"C:\SPU\" + excelFilePath + "\\";
+
+
+            if (Directory.Exists(nameFolder))
+            {
+            }
+            else
+            {
+                DirectoryInfo di = Directory.CreateDirectory(nameFolder);
+            }
+            FileInfo fi1 = new FileInfo(nameFolder + excelFilePath + ".xlsx");
             using (ExcelPackage pck = new ExcelPackage())
             {
-                ExcelWorksheet ws = pck.Workbook.Worksheets.Add("SPU");
+                ExcelWorksheet ws = pck.Workbook.Worksheets.Add("Сорт-ПУВС");
                
                 ws.Cells["A1"].LoadFromDataTable(tbl, true);
                 
@@ -221,26 +260,17 @@ namespace Sort_PUVS
 
                 OpenExcel();
                 radRichTextEditor1.Text += "Файл успешно открыт\n";
-                GetTableDataFromXl(fbd.FileName);
-                cou = dt.Rows.Count;
-                radRichTextEditor1.Text += "Обнаружено " + dt.Rows.Count + " записей в файле" + "\n";
-                CloseExcel();
-                UniqueEx();
-                radRichTextEditor1.Text += "Обнаружено " + dt_copy.Rows.Count + " записей страхователей в файле" + "\n";
-            }
-        }
 
-        private void radButton1_Click(object sender, EventArgs e)
-        {
-            cou = 0;
-            finddata = dt.Clone();
-            for (int y = 0; y < dt_copy.Rows.Count; y++)
-            {
-                FindEx(finddata, y);
-                int percentage = (y + 1) * 100 / dt_copy.Rows.Count;
+                GetTableDataFromXl(fbd.FileName);
+                radRichTextEditor1.Text += "Обработка файла, подождите...\n";
+                cou = dt.Rows.Count;
+                
+                CloseExcel();
+                radRichTextEditor1.Text += "Обнаружено записей в файле: " + dt.Rows.Count + "\n";
+
+                UniqueEx();
+                radRichTextEditor1.Text += "Обнаружено номеров страхователей в файле: " + dt_copy.Rows.Count + "\n";
             }
-            finddata.Dispose();
-           
         }
 
         private void radButton3_Click(object sender, EventArgs e)
@@ -311,6 +341,11 @@ namespace Sort_PUVS
         {
             progressBar1.Value1 = e.ProgressPercentage;
             progressBar1.Text = (e.ProgressPercentage.ToString() + "%");
+        }
+
+        private void radButton4_Click(object sender, EventArgs e)
+        {
+            Application.Exit();
         }
     }
 }
