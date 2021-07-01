@@ -8,16 +8,17 @@ using System.Text;
 using System.Windows.Forms;
 using Telerik.WinControls;
 using Telerik.WinControls.UI;
-using Excel = Microsoft.Office.Interop.Excel;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Data.OleDb;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Spreadsheet;
 using OfficeOpenXml;
 using System.Diagnostics;
 using ExcelDataReader;
+using NPOI.HPSF;
+using NPOI.HSSF.UserModel;
+using NPOI.SS.UserModel;
 
 namespace Sort_PUVS
 {
@@ -30,10 +31,6 @@ namespace Sort_PUVS
         public DataTable dt_copy = new DataTable();
         public DataTable finddata = new DataTable();
         StringBuilder sb = new StringBuilder();
-
-        Excel.Application myExcelApplication;
-        Excel.Workbook myExcelWorkbook;
-        Excel.Worksheet myExcelWorkSheet;
 
         public RadForm1()
         {
@@ -49,8 +46,7 @@ namespace Sort_PUVS
         public string ExcelFilePath { get; set; } = string.Empty;
 
         public void UniqueEx()
-        {
-            
+        {           
             try
             {
                 dt_copy = dt.Copy();
@@ -62,7 +58,6 @@ namespace Sort_PUVS
                 sb.Append(DateTime.Now + ": Не удалось выделить уникальные значения\r\n" + ex);
                 
             }
-
         }
 
         public void FindEx(DataTable data, int y)
@@ -78,7 +73,6 @@ namespace Sort_PUVS
                         dt.Rows.RemoveAt(i); //гениально!!!!
                         i--;
                     }
-                   
                 }
                 cou += finddata.Rows.Count;
                 ExportToExcel(finddata, Convert.ToString(dt_copy.Rows[y][0]));   
@@ -145,21 +139,58 @@ namespace Sort_PUVS
             {
                 DirectoryInfo di = Directory.CreateDirectory(nameFolder);
             }
-            FileInfo fi1 = new FileInfo(nameFolder + excelFilePath + ".xlsx");
+            //FileInfo fi1 = new FileInfo( nameFolder + excelFilePath + ".xlsx");
+            string fi1 = nameFolder + excelFilePath + ".xls";
             sb.Append(DateTime.Now + ": Создан файл в " + fi1 + "\r\n");
             sb.Append(DateTime.Now + ": Скопировано строк :" + finddata.Rows.Count + "\r\n");
+
             
-            using (ExcelPackage pck = new ExcelPackage())
-            {
-                ExcelWorksheet ws = pck.Workbook.Worksheets.Add("Сорт-ПУВС");
-               
-                ws.Cells["A1"].LoadFromDataTable(tbl, true);
-                
-                pck.SaveAs(fi1);
-                GC.Collect();
-                ws.Dispose();
-                pck.Dispose();   
+            using(var fs = new FileStream(fi1, FileMode.Append, FileAccess.Write))
+               {
+                HSSFWorkbook workbook = new HSSFWorkbook();
+                ISheet excelSheet = workbook.CreateSheet("Сорт-ПУВС");
+                    
+                List<string> columns = new List<string>();
+                IRow row = excelSheet.CreateRow(0);
+                int columnIndex = 0;
+
+                foreach (System.Data.DataColumn column in tbl.Columns)
+                {
+                    columns.Add(column.ColumnName);
+                    row.CreateCell(columnIndex).SetCellValue(column.ColumnName);
+                    columnIndex++;
+                }
+
+                int rowIndex = 1;
+                foreach (DataRow dsrow in tbl.Rows)
+                {
+                    row = excelSheet.CreateRow(rowIndex);
+                    int cellIndex = 0;
+                    foreach (String col in columns)
+                    {
+                        row.CreateCell(cellIndex).SetCellValue(dsrow[col].ToString());
+                        cellIndex++;
+                    }
+
+                    rowIndex++;
+                }
+                workbook.Write(fs);
+               // fs.Close();
             }
+            
+           /*
+             using (ExcelPackage pck = new ExcelPackage())
+              {
+                  ExcelWorksheet ws = pck.Workbook.Worksheets.Add("Сорт-ПУВС");
+
+                  ws.Cells["A1"].LoadFromDataTable(tbl, true);
+
+                  pck.SaveAs(fi1);
+                  GC.Collect();
+                  ws.Dispose();
+                  pck.Dispose();   
+              }
+           */
         }
 
         public DataTable GetTableDataFromXl(string path, bool hasHeader = true)
@@ -216,40 +247,11 @@ namespace Sort_PUVS
                         }
                     });
 
-
-
                     // The result of each spreadsheet is in result.Tables
-
                     dt = result.Tables[0];
                     
                 }
             }
-           
-            //  ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
-            /*  using (var pck = new OfficeOpenXml.ExcelPackage())
-              {
-                  using (var stream = File.OpenRead(path))
-                  {
-                      pck.Load(stream);
-                  }
-                  var ws = pck.Workbook.Worksheets.First();
-                 // DataTable tbl = new DataTable();
-                  foreach (var firstRowCell in ws.Cells[1, 1, 1, ws.Dimension.End.Column])
-                  {
-                      dt.Columns.Add(hasHeader ? firstRowCell.Text : string.Format("Column {0}", firstRowCell.Start.Column));
-                  }
-                  var startRow = hasHeader ? 2 : 1;
-                  for (int rowNum = startRow; rowNum <= ws.Dimension.End.Row; rowNum++)
-                  {
-                      var wsRow = ws.Cells[rowNum, 1, rowNum, ws.Dimension.End.Column];
-                      DataRow row = dt.Rows.Add();
-                      foreach (var cell in wsRow)
-                      {
-                          row[cell.Start.Column - 1] = cell.Text;
-                      }
-                  }
-
-              }*/
             return dt;
         }
 
