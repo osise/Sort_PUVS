@@ -17,6 +17,7 @@ using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Spreadsheet;
 using OfficeOpenXml;
 using System.Diagnostics;
+using ExcelDataReader;
 
 namespace Sort_PUVS
 {
@@ -49,6 +50,7 @@ namespace Sort_PUVS
 
         public void UniqueEx()
         {
+            
             try
             {
                 dt_copy = dt.Copy();
@@ -163,31 +165,92 @@ namespace Sort_PUVS
         public DataTable GetTableDataFromXl(string path, bool hasHeader = true)
         {
             dt.Clear();
-            ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
-            using (var pck = new OfficeOpenXml.ExcelPackage())
+
+            using (var stream = File.Open(path, FileMode.Open, FileAccess.Read))
             {
-                using (var stream = File.OpenRead(path))
+                // Auto-detect format, supports:
+                //  - Binary Excel files (2.0-2003 format; *.xls)
+                //  - OpenXml Excel files (2007 format; *.xlsx, *.xlsb)
+                using (var reader = ExcelReaderFactory.CreateReader(stream))
                 {
-                    pck.Load(stream);
-                }
-                var ws = pck.Workbook.Worksheets.First();
-               // DataTable tbl = new DataTable();
-                foreach (var firstRowCell in ws.Cells[1, 1, 1, ws.Dimension.End.Column])
-                {
-                    dt.Columns.Add(hasHeader ? firstRowCell.Text : string.Format("Column {0}", firstRowCell.Start.Column));
-                }
-                var startRow = hasHeader ? 2 : 1;
-                for (int rowNum = startRow; rowNum <= ws.Dimension.End.Row; rowNum++)
-                {
-                    var wsRow = ws.Cells[rowNum, 1, rowNum, ws.Dimension.End.Column];
-                    DataRow row = dt.Rows.Add();
-                    foreach (var cell in wsRow)
+                    // var result = reader.AsDataSet();
+                    var result = reader.AsDataSet(new ExcelDataSetConfiguration()
                     {
-                        row[cell.Start.Column - 1] = cell.Text;
-                    }
+                        // Gets or sets a value indicating whether to set the DataColumn.DataType 
+                        // property in a second pass.
+                        UseColumnDataType = true,
+
+                        // Gets or sets a callback to determine whether to include the current sheet
+                        // in the DataSet. Called once per sheet before ConfigureDataTable.
+                        FilterSheet = (tableReader, sheetIndex) => true,
+
+                        // Gets or sets a callback to obtain configuration options for a DataTable. 
+                        ConfigureDataTable = (tableReader) => new ExcelDataTableConfiguration()
+                        {
+                            // Gets or sets a value indicating the prefix of generated column names.
+                           // EmptyColumnNamePrefix = "Column",
+
+                            // Gets or sets a value indicating whether to use a row from the 
+                            // data as column names.
+                            UseHeaderRow = true,
+
+                            // Gets or sets a callback to determine which row is the header row. 
+                            // Only called when UseHeaderRow = true.
+                           /* ReadHeaderRow = (rowReader) => {
+                                // F.ex skip the first row and use the 2nd row as column headers:
+                                rowReader.Read();
+                            },*/
+
+                            // Gets or sets a callback to determine whether to include the 
+                            // current row in the DataTable.
+                            FilterRow = (rowReader) => {
+                                return true;
+                            },
+
+                            // Gets or sets a callback to determine whether to include the specific
+                            // column in the DataTable. Called once per column after reading the 
+                            // headers.
+                            FilterColumn = (rowReader, columnIndex) => {
+                                return true;
+                            }
+                        }
+                    });
+
+
+
+                    // The result of each spreadsheet is in result.Tables
+
+                    dt = result.Tables[0];
+                    
                 }
-                return dt;
             }
+           
+            //  ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+            /*  using (var pck = new OfficeOpenXml.ExcelPackage())
+              {
+                  using (var stream = File.OpenRead(path))
+                  {
+                      pck.Load(stream);
+                  }
+                  var ws = pck.Workbook.Worksheets.First();
+                 // DataTable tbl = new DataTable();
+                  foreach (var firstRowCell in ws.Cells[1, 1, 1, ws.Dimension.End.Column])
+                  {
+                      dt.Columns.Add(hasHeader ? firstRowCell.Text : string.Format("Column {0}", firstRowCell.Start.Column));
+                  }
+                  var startRow = hasHeader ? 2 : 1;
+                  for (int rowNum = startRow; rowNum <= ws.Dimension.End.Row; rowNum++)
+                  {
+                      var wsRow = ws.Cells[rowNum, 1, rowNum, ws.Dimension.End.Column];
+                      DataRow row = dt.Rows.Add();
+                      foreach (var cell in wsRow)
+                      {
+                          row[cell.Start.Column - 1] = cell.Text;
+                      }
+                  }
+
+              }*/
+            return dt;
         }
 
         public void radButton2_Click(object sender, EventArgs e)
