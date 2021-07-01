@@ -131,7 +131,7 @@ namespace Sort_PUVS
             string nameFolder = "";
             ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
             sb.Append(DateTime.Now + ": Создаем каталог " + excelFilePath + "\r\n");
-            nameFolder = @"C:\SPU\" + excelFilePath + "\\";
+            nameFolder = @"C:\Sort-PUVS\" + excelFilePath + "\\";
             cat ++;
 
 
@@ -160,121 +160,47 @@ namespace Sort_PUVS
             }
         }
 
-        public void OpenExcel()
+        public DataTable GetTableDataFromXl(string path, bool hasHeader = true)
         {
-           
-            try
+            dt.Clear();
+            ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+            using (var pck = new OfficeOpenXml.ExcelPackage())
             {
-                
-               
-                    myExcelApplication = null;
-
-                    myExcelApplication = new Excel.Application
+                using (var stream = File.OpenRead(path))
+                {
+                    pck.Load(stream);
+                }
+                var ws = pck.Workbook.Worksheets.First();
+               // DataTable tbl = new DataTable();
+                foreach (var firstRowCell in ws.Cells[1, 1, 1, ws.Dimension.End.Column])
+                {
+                    dt.Columns.Add(hasHeader ? firstRowCell.Text : string.Format("Column {0}", firstRowCell.Start.Column));
+                }
+                var startRow = hasHeader ? 2 : 1;
+                for (int rowNum = startRow; rowNum <= ws.Dimension.End.Row; rowNum++)
+                {
+                    var wsRow = ws.Cells[rowNum, 1, rowNum, ws.Dimension.End.Column];
+                    DataRow row = dt.Rows.Add();
+                    foreach (var cell in wsRow)
                     {
-                        DisplayAlerts = false // turn off alerts
-                    }; // create Excell App
-
-                    myExcelWorkbook = myExcelApplication.Workbooks._Open(ExcelFilePath, System.Reflection.Missing.Value,
-                        System.Reflection.Missing.Value, System.Reflection.Missing.Value, System.Reflection.Missing.Value,
-                        System.Reflection.Missing.Value, System.Reflection.Missing.Value, System.Reflection.Missing.Value,
-                        System.Reflection.Missing.Value, System.Reflection.Missing.Value, System.Reflection.Missing.Value,
-                        System.Reflection.Missing.Value, System.Reflection.Missing.Value); // open the existing excel file
-
-                    int numberOfWorkbooks = myExcelApplication.Workbooks.Count; // get number of workbooks (optional)
-
-                    myExcelWorkSheet = (Excel.Worksheet)myExcelWorkbook.Worksheets[1]; // define in which worksheet, do you want to add data
-                    myExcelWorkSheet.Name = "Лист 1"; // define a name for the worksheet (optinal)
-
-                    int numberOfSheets = myExcelWorkbook.Worksheets.Count; // get number of worksheets (optional)
-
-                  
-            }
-           
-             catch (Exception ex)
-            {
-                MessageBox.Show("Не удалось открыть файл. Проверьте, возможно он уже открыт или поврежден");
-                sb.Append(DateTime.Now + ": Не удалось открыть файл. Проверьте, возможно он уже открыт или поврежден\r\n" + ex);
+                        row[cell.Start.Column - 1] = cell.Text;
+                    }
+                }
+                return dt;
             }
         }
 
-        public void CloseExcel() //Остаются открытыми файлы после работы
-        {
-            try
-            {
-                try
-                {
-                    myExcelWorkbook.SaveAs(ExcelFilePath, System.Reflection.Missing.Value, System.Reflection.Missing.Value, System.Reflection.Missing.Value,
-                                               System.Reflection.Missing.Value, System.Reflection.Missing.Value, Excel.XlSaveAsAccessMode.xlNoChange,
-                                               System.Reflection.Missing.Value, System.Reflection.Missing.Value, System.Reflection.Missing.Value,
-                                               System.Reflection.Missing.Value, System.Reflection.Missing.Value); // Save data in excel
-
-
-                    myExcelWorkbook.Close(true, ExcelFilePath, System.Reflection.Missing.Value); // close the worksheet
-                }
-                catch (Exception ex )
-                {
-                    MessageBox.Show("Не удалось закрыть исходный файл.\n Проверьте, возможно он уже закрыт или поврежден");
-                    sb.Append(DateTime.Now + ": Не удалось закрыть исходный файл. Проверьте, возможно он уже открыт или поврежден\r\n" + ex);
-                    //throw;
-                }
-                
-            }
-            finally
-            {
-                myExcelApplication.Quit(); // close the excel application
-                GC.Collect();
-                System.Runtime.InteropServices.Marshal.ReleaseComObject(myExcelWorkSheet);
-                System.Runtime.InteropServices.Marshal.ReleaseComObject(myExcelWorkbook);
-                System.Runtime.InteropServices.Marshal.ReleaseComObject(myExcelApplication);
-            }
-
-        }
-
-        public DataTable GetTableDataFromXl(string XlFile)
-        {
-            dt.Clear(); //Очищаем dt чтобы не суммировалось от нескольких файлов 
-            try
-            {
-                string Ext = Path.GetExtension(XlFile);
-                string connectionString = "";
-                if (Ext == ".xls")
-                {   //For Excel 97-03
-                    connectionString = "Provider=Microsoft.Jet.OLEDB.4.0; Data Source =" + XlFile + "; Extended Properties = 'Excel 8.0;HDR=YES'";
-                }
-                else if (Ext == ".xlsx")
-                {    //For Excel 07 and greater
-                    connectionString = "Provider=Microsoft.ACE.OLEDB.12.0; Data Source =" + XlFile + "; Extended Properties = 'Excel 8.0;HDR=YES'";
-                }
-                OleDbConnection conn = new OleDbConnection(connectionString);
-                OleDbCommand cmd = new OleDbCommand();
-                OleDbDataAdapter dataAdapter = new OleDbDataAdapter();
-
-                cmd.Connection = conn;
-                //Fetch 1st Sheet Name
-                conn.Open();
-                DataTable dtSchema;
-                dtSchema = conn.GetOleDbSchemaTable(OleDbSchemaGuid.Tables, null);
-                string ExcelSheetName = dtSchema.Rows[0]["TABLE_NAME"].ToString();
-                conn.Close();
-                //Read all data of fetched Sheet to a Data Table
-                conn.Open();
-                cmd.CommandText = "SELECT * From [" + ExcelSheetName + "]";
-                dataAdapter.SelectCommand = cmd;
-                dataAdapter.Fill(dt);
-                conn.Close();
-               
-            }
-            catch (Exception ex)
-            { 
-                MessageBox.Show("Не удалось прочесть файл\n" + ex);
-                sb.Append(DateTime.Now + ": Не удалось прочесть файл\r\n Проверьте, возможно он уже открыт или поврежден\r\n" + ex);
-            }
-
-            return dt;
-        }
-       
         public void radButton2_Click(object sender, EventArgs e)
         {
+            string strlen = "";
+            if (Directory.Exists(@"C:\Sort-PUVS\"))
+            {
+
+            }
+            else
+            {
+                DirectoryInfo di = Directory.CreateDirectory(@"C:\Sort-PUVS\");
+            }
             sb.Append("\r\n");
             sb.Append("\r\n");
             sb.Append("------------------------ " + DateTime.Now + " ------------------------\r\n");
@@ -288,38 +214,45 @@ namespace Sort_PUVS
                 string Ext1 = Path.GetExtension(ExcelFilePath);
                 if (Ext1 == ".xls" || Ext1 == ".xlsx")
                 {
-                    OpenExcel();
                     radRichTextEditor1.Text += "Файл успешно открыт\n";
                     sb.Append(DateTime.Now + ": Файл успешно открыт\r\n");
                     radRichTextEditor1.Text += "Обработка файла, подождите...\n";
 
                     GetTableDataFromXl(fbd.FileName);
                     cou = dt.Rows.Count;
+                    strlen = dt.Rows[1].ItemArray[0].ToString();
+                    if (strlen.Length == 11 || strlen.Length == 12 || strlen.Length == 14)
+                    {
+                        radRichTextEditor1.Text += "Обнаружено записей в файле: " + dt.Rows.Count + "\n";
+                        sb.Append(DateTime.Now + ": Обнаружено записей в файле: " + dt.Rows.Count + "\r\n");
 
-                    CloseExcel();
-                    radRichTextEditor1.Text += "Обнаружено записей в файле: " + dt.Rows.Count + "\n";
-                    sb.Append(DateTime.Now + ": Обнаружено записей в файле: " + dt.Rows.Count + "\r\n");
+                        UniqueEx();
+                        radRichTextEditor1.Text += "Обнаружено номеров страхователей в файле: " + dt_copy.Rows.Count + "\n";
+                        sb.Append(DateTime.Now + ": Обнаружено номеров страхователей в файле: " + dt_copy.Rows.Count + "\r\n");
+                        radRichTextEditor1.Text += "Нажмите кнопку Начать\n";
+                    }  
+                    else
+                    {
+                        radRichTextEditor1.Text += "Не удалось обработать строку. Данные в первом столбце - не регномер или его формат неверен!" + "\n";
+                        sb.Append(DateTime.Now + ": Не удалось обработать строку. Данные в первом столбце - не регномер или его формат неверен!\r\n");
+                    }
 
-                    UniqueEx();
-                    radRichTextEditor1.Text += "Обнаружено номеров страхователей в файле: " + dt_copy.Rows.Count + "\n";
-                    sb.Append(DateTime.Now + ": Обнаружено номеров страхователей в файле: " + dt_copy.Rows.Count + "\r\n");
-                    radRichTextEditor1.Text += "Нажмите кнопку Начать\n";
-                }
-                else
-                {
-                    radRichTextEditor1.Text += "Не удалось открыть файл. Это не файл MS Excel!" + "\n";
-                    sb.Append(DateTime.Now + ": Не удалось открыть файл.Это не файл MS Excel!\r\n");
-                }
+            }
+            else
+            {
+                radRichTextEditor1.Text += "Не удалось открыть файл. Это не файл MS Excel!" + "\n";
+                sb.Append(DateTime.Now + ": Не удалось открыть файл.Это не файл MS Excel!\r\n");
+            }
                
 
             }
-            File.AppendAllText(@"C:\log.txt", sb.ToString());
+            File.AppendAllText(@"C:\Sort-PUVS\log.txt", sb.ToString());
             sb.Clear();
         }
 
         private void radButton3_Click(object sender, EventArgs e)
         {
-            Process.Start("notepad.exe", @"C:\log.txt");
+            Process.Start("notepad.exe", @"C:\Sort-PUVS\log.txt");
         }
 
         private void radButton5_Click(object sender, EventArgs e)
@@ -358,7 +291,7 @@ namespace Sort_PUVS
                     FindEx(finddata, y);
                     worker.ReportProgress(percentage);
                 }
-                File.AppendAllText(@"C:\log.txt", sb.ToString());
+                File.AppendAllText(@"C:\Sort-PUVS\log.txt", sb.ToString());
                 sb.Clear();
             }
 
@@ -395,7 +328,7 @@ namespace Sort_PUVS
             sb.Append(DateTime.Now + ": Обработано записей страхователей в файле: " +cou + "\r\n");
             radRichTextEditor1.Text += "Создано каталогов :" + cat + "\n";
             sb.Append(DateTime.Now + ": Создано каталогов :" + cat + "\r\n");
-            File.AppendAllText(@"C:\log.txt", sb.ToString());
+            File.AppendAllText(@"C:\Sort-PUVS\log.txt", sb.ToString());
             sb.Clear();
         }
         private void bw_ProgressChanged(object sender, ProgressChangedEventArgs e)
