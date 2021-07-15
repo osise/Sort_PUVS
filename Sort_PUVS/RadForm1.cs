@@ -31,6 +31,7 @@ namespace Sort_PUVS
         public DataTable dt_copy = new DataTable();
         public DataTable finddata = new DataTable();
         StringBuilder sb = new StringBuilder();
+        string sourcefile;
 
         public RadForm1()
         {
@@ -75,7 +76,7 @@ namespace Sort_PUVS
                     }
                 }
                 cou += finddata.Rows.Count;
-                ExportToExcel(finddata, Convert.ToString(dt_copy.Rows[y][0]));   
+                ExportToExcel(finddata, Convert.ToString(dt_copy.Rows[y][0]), sourcefile);   
             }
             catch (Exception ex)
             {
@@ -101,7 +102,7 @@ namespace Sort_PUVS
             return sb.ToString();
         }
 
-        public void ExportToExcel(DataTable tbl, string excelFilePath)
+        public void ExportToExcel(DataTable tbl, string excelFilePath, string source)
         {
             sb.Append("\r\n");
             sb.Append(DateTime.Now + ": Обработка файла\r\n");
@@ -139,58 +140,59 @@ namespace Sort_PUVS
             {
                 DirectoryInfo di = Directory.CreateDirectory(nameFolder);
             }
-            //FileInfo fi1 = new FileInfo( nameFolder + excelFilePath + ".xlsx");
-            string fi1 = nameFolder + excelFilePath + ".xls";
+            FileInfo fi = new FileInfo( nameFolder + excelFilePath + "_" + source + ".xlsx");
+            string fi1 = nameFolder + excelFilePath + "_" + source + ".xls";
             sb.Append(DateTime.Now + ": Создан файл в " + fi1 + "\r\n");
             sb.Append(DateTime.Now + ": Скопировано строк :" + finddata.Rows.Count + "\r\n");
 
-            
-            using(var fs = new FileStream(fi1, FileMode.Append, FileAccess.Write))
-               {
-                HSSFWorkbook workbook = new HSSFWorkbook();
-                ISheet excelSheet = workbook.CreateSheet("Сорт-ПУВС");
-                    
-                List<string> columns = new List<string>();
-                IRow row = excelSheet.CreateRow(0);
-                int columnIndex = 0;
-
-                foreach (System.Data.DataColumn column in tbl.Columns)
+            if (excelFilePath.Contains(".xlsx"))
                 {
-                    columns.Add(column.ColumnName);
-                    row.CreateCell(columnIndex).SetCellValue(column.ColumnName);
-                    columnIndex++;
-                }
-
-                int rowIndex = 1;
-                foreach (DataRow dsrow in tbl.Rows)
-                {
-                    row = excelSheet.CreateRow(rowIndex);
-                    int cellIndex = 0;
-                    foreach (String col in columns)
+                    using (ExcelPackage pck = new ExcelPackage())
                     {
-                        row.CreateCell(cellIndex).SetCellValue(dsrow[col].ToString());
-                        cellIndex++;
+                        ExcelWorksheet ws = pck.Workbook.Worksheets.Add("Сорт-ПУВС");
+
+                        ws.Cells["A1"].LoadFromDataTable(tbl, true);
+
+                        pck.SaveAs(fi);
+                        GC.Collect();
+                        ws.Dispose();
+                        pck.Dispose();
+                    }
+                }
+            else
+            {
+                using (var fs = new FileStream(fi1, FileMode.Append, FileAccess.Write))
+                {
+                    HSSFWorkbook workbook = new HSSFWorkbook();
+                    ISheet excelSheet = workbook.CreateSheet("Сорт-ПУВС");
+
+                    List<string> columns = new List<string>();
+                    IRow row = excelSheet.CreateRow(0);
+                    int columnIndex = 0;
+
+                    foreach (System.Data.DataColumn column in tbl.Columns)
+                    {
+                        columns.Add(column.ColumnName);
+                        row.CreateCell(columnIndex).SetCellValue(column.ColumnName);
+                        columnIndex++;
                     }
 
-                    rowIndex++;
+                    int rowIndex = 1;
+                    foreach (DataRow dsrow in tbl.Rows)
+                    {
+                        row = excelSheet.CreateRow(rowIndex);
+                        int cellIndex = 0;
+                        foreach (String col in columns)
+                        {
+                            row.CreateCell(cellIndex).SetCellValue(dsrow[col].ToString());
+                            cellIndex++;
+                        }
+
+                        rowIndex++;
+                    }
+                    workbook.Write(fs);
                 }
-                workbook.Write(fs);
-               // fs.Close();
             }
-            
-           /*
-             using (ExcelPackage pck = new ExcelPackage())
-              {
-                  ExcelWorksheet ws = pck.Workbook.Worksheets.Add("Сорт-ПУВС");
-
-                  ws.Cells["A1"].LoadFromDataTable(tbl, true);
-
-                  pck.SaveAs(fi1);
-                  GC.Collect();
-                  ws.Dispose();
-                  pck.Dispose();   
-              }
-           */
         }
 
         public DataTable GetTableDataFromXl(string path, bool hasHeader = true)
@@ -273,6 +275,7 @@ namespace Sort_PUVS
             OpenFileDialog fbd = new OpenFileDialog();
             if (fbd.ShowDialog() == DialogResult.OK)
             {
+                sourcefile = Path.GetFileNameWithoutExtension(fbd.SafeFileName);
                 ExcelFilePath = fbd.FileName;
                 radRichTextEditor1.Text += "Выбран файл: " + fbd.FileName + "\n";
                 sb.Append(DateTime.Now + ": Выбран файл: " + fbd.FileName + "\r\n");
